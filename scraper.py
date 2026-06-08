@@ -26,8 +26,7 @@ def scrape_menu():
         return None, None
 
     rows = table.find_all("tr")
-    today_weekday = datetime.now().weekday()  # 0=월, 1=화, 2=수, 3=목, 4=금
-
+    today_weekday = datetime.now().weekday()
     weekday_names = ["월요일", "화요일", "수요일", "목요일", "금요일"]
 
     for row in rows:
@@ -43,7 +42,31 @@ def scrape_menu():
 
     return None, None
 
-# ── 3. OpenAI 영양 분석 ─────────────────────────────────────
+# ── 3. 날씨 가져오기 (광명시) ───────────────────────────────
+def get_weather():
+    try:
+        url = "https://wttr.in/Gwangmyeong?format=%C+%t+%h"
+        res = requests.get(url, timeout=5)
+        weather = res.text.strip()
+        return f"🌤️ 광명 날씨: {weather}"
+    except:
+        return "🌤️ 날씨 정보를 가져오지 못했어요"
+
+# ── 4. DALL-E로 식단 이미지 생성 ───────────────────────────
+def generate_food_image(menu_list, api_key):
+    client = OpenAI(api_key=api_key)
+    menu_text = ", ".join(menu_list[:4])
+
+    response = client.images.generate(
+        model="dall-e-3",
+        prompt=f"오늘의 한국 학교 급식 메뉴: {menu_text}. 맛있어 보이는 급식 트레이 위에 음식들이 담긴 모습. 밝고 따뜻한 색감, 만화 일러스트 스타일.",
+        size="1024x1024",
+        quality="standard",
+        n=1
+    )
+    return response.data[0].url
+
+# ── 5. OpenAI 영양 분석 ─────────────────────────────────────
 def analyze_nutrition(menu_list, api_key):
     client = OpenAI(api_key=api_key)
     menu_text = ", ".join(menu_list)
@@ -54,20 +77,34 @@ def analyze_nutrition(menu_list, api_key):
             "role": "user",
             "content": f"""오늘의 점심 식단: {menu_text}
 
-다음 항목을 분석해서 이모지와 함께 보기 좋게 정리해줘:
+다음 항목을 분석해줘:
 🔥 총 예상 칼로리 (kcal)
-🧂 예상 나트륨 (mg) - 하루 권장량 2000mg 대비 몇 %인지 포함
+🧂 예상 나트륨 (mg) - 하루 권장량 2000mg 대비 %
 🥩 탄수화물 / 단백질 / 지방 (g)
-💧 이 식단 후 권장 물 섭취량과 이유 (1-2줄)
+💧 권장 물 섭취량과 이유 (1줄)
 💡 오늘의 건강 한마디
 
-숫자는 구체적으로, 전체 5줄 이내로 간결하게."""
+5줄 이내로 간결하게."""
         }]
     )
     return response.choices[0].message.content
 
-# ── 4. Teams Webhook 전송 ───────────────────────────────────
-def send_to_teams(menu_list, day_text, nutrition_text, webhook_url):
+# ── 6. 오늘의 밥밥디라라 한마디 ────────────────────────────
+def get_bab_comment(menu_list, api_key):
+    client = OpenAI(api_key=api_key)
+    menu_text = ", ".join(menu_list)
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{
+            "role": "user",
+            "content": f"오늘 점심이 {menu_text}래. 친구한테 급식 메뉴 알려주듯이 짧게 한마디만 해줘. 이모지 1개 포함, 1줄."
+        }]
+    )
+    return response.choices[0].message.content
+
+# ── 7. Teams Webhook 전송 ───────────────────────────────────
+def send_to_teams(menu_list, day_text, nutrition_text, image_url, weather_text, bab_comment, webhook_url):
     today = datetime.now().strftime("%Y년 %m월 %d일")
     menu_text = "\n".join(f"• {m}" for m in menu_list)
 
@@ -82,29 +119,57 @@ def send_to_teams(menu_list, day_text, nutrition_text, webhook_url):
                 "body": [
                     {
                         "type": "TextBlock",
-                        "size": "Large",
+                        "size": "ExtraLarge",
                         "weight": "Bolder",
-                        "text": f"🍱 {today} 밥밥디라라~ {day_text} 점심은요!"
+                        "text": "🍱 밥밥디라라~",
+                        "color": "Accent"
                     },
                     {
                         "type": "TextBlock",
-                        "text": menu_text,
+                        "text": f"{today} {day_text} | {weather_text}",
+                        "isSubtle": True,
+                        "spacing": "None"
+                    },
+                    {
+                        "type": "Image",
+                        "url": image_url,
+                        "size": "Stretch",
+                        "spacing": "Medium"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": f"💬 {bab_comment}",
                         "wrap": True,
-                        "spacing": "Small"
+                        "spacing": "Medium",
+                        "isSubtle": True
                     },
                     {
                         "type": "TextBlock",
                         "size": "Medium",
                         "weight": "Bolder",
-                        "text": "🤖 AI한테 물어봤는데 이래",
-                        "spacing": "Large",
+                        "text": "📋 오늘의 메뉴",
+                        "spacing": "ExtraLarge",
+                        "separator": True
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": menu_text,
+                        "wrap": True,
+                        "spacing": "Medium"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "size": "Medium",
+                        "weight": "Bolder",
+                        "text": "🔬 AI가 분석한 오늘 식판",
+                        "spacing": "ExtraLarge",
                         "separator": True
                     },
                     {
                         "type": "TextBlock",
                         "text": nutrition_text,
                         "wrap": True,
-                        "spacing": "Small"
+                        "spacing": "Medium"
                     }
                 ]
             }
@@ -135,7 +200,9 @@ if __name__ == "__main__":
                     "body": [{
                         "type": "TextBlock",
                         "text": f"🍱 {today} 오늘은 밥밥디... 없다 😭 학식 확인해봐",
-                        "wrap": True
+                        "wrap": True,
+                        "size": "Large",
+                        "weight": "Bolder"
                     }]
                 }
             }]
@@ -144,8 +211,14 @@ if __name__ == "__main__":
         print("밥이 없다고 알렸어 😭")
     else:
         print(f"오늘 밥 찾았다!! {menu_list}")
+        print("날씨 확인 중...")
+        weather_text = get_weather()
+        print("DALL-E한테 그림 그려달라는 중... 🎨")
+        image_url = generate_food_image(menu_list, openai_key)
         print("AI한테 칼로리 물어보는 중...")
         nutrition_text = analyze_nutrition(menu_list, openai_key)
+        print("오늘의 한마디 생성 중...")
+        bab_comment = get_bab_comment(menu_list, openai_key)
         print("밥밥디라라~ 전송 중...")
-        send_to_teams(menu_list, day_text, nutrition_text, webhook_url)
+        send_to_teams(menu_list, day_text, nutrition_text, image_url, weather_text, bab_comment, webhook_url)
         print("밥밥디라라!! 완료 🎉")
