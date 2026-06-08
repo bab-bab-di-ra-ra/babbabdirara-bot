@@ -52,19 +52,6 @@ def get_weather():
     except:
         return "🌤️ 날씨 정보를 가져오지 못했어요"
 
-# ── 4. DALL-E로 식단 이미지 생성 ───────────────────────────
-def generate_food_image(menu_list, api_key):
-    client = OpenAI(api_key=api_key)
-    menu_text = ", ".join(menu_list[:4])
-
-    response = client.images.generate(
-        model="dall-e-2",
-        prompt=f"오늘의 한국 학교 급식 메뉴: {menu_text}. 맛있어 보이는 급식 트레이 위에 음식들이 담긴 모습. 밝고 따뜻한 색감, 만화 일러스트 스타일.",
-        size="512x512",
-        quality="standard",
-        n=1
-    )
-    return response.data[0].url
 
 # ── 5. OpenAI 영양 분석 ─────────────────────────────────────
 def analyze_nutrition(menu_list, api_key):
@@ -104,7 +91,7 @@ def get_bab_comment(menu_list, api_key):
     return response.choices[0].message.content
 
 # ── 7. Teams Webhook 전송 ───────────────────────────────────
-def send_to_teams(menu_list, day_text, nutrition_text, image_url, weather_text, bab_comment, webhook_url):
+def send_to_teams(menu_list, day_text, nutrition_text, weather_text, bab_comment, webhook_url):
     today = datetime.now().strftime("%Y년 %m월 %d일")
     menu_text = "\n".join(f"• {m}" for m in menu_list)
 
@@ -129,12 +116,6 @@ def send_to_teams(menu_list, day_text, nutrition_text, image_url, weather_text, 
                         "text": f"{today} {day_text} | {weather_text}",
                         "isSubtle": True,
                         "spacing": "None"
-                    },
-                    {
-                        "type": "Image",
-                        "url": image_url,
-                        "size": "Stretch",
-                        "spacing": "Medium"
                     },
                     {
                         "type": "TextBlock",
@@ -213,8 +194,6 @@ if __name__ == "__main__":
         print(f"오늘 밥 찾았다!! {menu_list}")
         print("날씨 확인 중...")
         weather_text = get_weather()
-        print("DALL-E한테 그림 그려달라는 중... 🎨")
-        image_url = generate_food_image(menu_list, openai_key)
         print("AI한테 칼로리 물어보는 중...")
         nutrition_text = analyze_nutrition(menu_list, openai_key)
         print("오늘의 한마디 생성 중...")
