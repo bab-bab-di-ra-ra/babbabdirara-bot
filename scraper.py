@@ -52,8 +52,7 @@ def get_weather():
     except:
         return "🌤️ 날씨 정보를 가져오지 못했어요"
 
-
-# ── 5. OpenAI 영양 분석 ─────────────────────────────────────
+# ── 4. OpenAI 영양 분석 ─────────────────────────────────────
 def analyze_nutrition(menu_list, api_key):
     client = OpenAI(api_key=api_key)
     menu_text = ", ".join(menu_list)
@@ -68,7 +67,7 @@ def analyze_nutrition(menu_list, api_key):
 🔥 총 예상 칼로리 (kcal)
 🧂 예상 나트륨 (mg) - 하루 권장량 2000mg 대비 %
 🥩 탄수화물 / 단백질 / 지방 (g)
-💧 권장 물 섭취량과 이유 (1줄)
+💧 권장 물 섭취량: 몇 L인지 수치를 앞에 크게 쓰고, 이유를 한 줄로 (예: 2.0L - 나트륨이 높아 수분 보충 필요)
 💡 오늘의 건강 한마디
 
 5줄 이내로 간결하게."""
@@ -76,7 +75,7 @@ def analyze_nutrition(menu_list, api_key):
     )
     return response.choices[0].message.content
 
-# ── 6. 오늘의 밥밥디라라 한마디 ────────────────────────────
+# ── 5. 오늘의 밥밥디라라 한마디 ────────────────────────────
 def get_bab_comment(menu_list, api_key):
     client = OpenAI(api_key=api_key)
     menu_text = ", ".join(menu_list)
@@ -90,7 +89,7 @@ def get_bab_comment(menu_list, api_key):
     )
     return response.choices[0].message.content
 
-# ── 7. Teams Webhook 전송 ───────────────────────────────────
+# ── 6. Teams Webhook 전송 ───────────────────────────────────
 def send_to_teams(menu_list, day_text, nutrition_text, weather_text, bab_comment, webhook_url):
     today = datetime.now().strftime("%Y년 %m월 %d일")
     menu_text = "\n".join(f"• {m}" for m in menu_list)
@@ -113,7 +112,13 @@ def send_to_teams(menu_list, day_text, nutrition_text, weather_text, bab_comment
                     },
                     {
                         "type": "TextBlock",
-                        "text": f"{today} {day_text} | {weather_text}",
+                        "text": f"{today} {day_text}",
+                        "isSubtle": True,
+                        "spacing": "None"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": weather_text,
                         "isSubtle": True,
                         "spacing": "None"
                     },
