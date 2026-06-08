@@ -1,0 +1,29 @@
+name: 밥밥디라라
+
+on:
+  schedule:
+    # 매일 오전 9시 KST = UTC 00:00
+    - cron: '0 0 * * 1-5'
+  workflow_dispatch:  # 수동 테스트 버튼
+
+jobs:
+  lunch-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v3
+
+      - name: Python 설치
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 라이브러리 설치
+        run: pip install requests beautifulsoup4 openai
+
+      - name: 밥밥디라라 실행 🍱
+        run: |
+          python scraper.py \
+            "${{ secrets.TEAMS_WEBHOOK }}" \
+            "${{ secrets.OPENAI_API_KEY }}"
