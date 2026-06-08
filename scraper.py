@@ -58,9 +58,9 @@ def generate_food_image(menu_list, api_key):
     menu_text = ", ".join(menu_list[:4])
 
     response = client.images.generate(
-        model="dall-e-3",
+        model="dall-e-2",
         prompt=f"오늘의 한국 학교 급식 메뉴: {menu_text}. 맛있어 보이는 급식 트레이 위에 음식들이 담긴 모습. 밝고 따뜻한 색감, 만화 일러스트 스타일.",
-        size="1024x1024",
+        size="512x512",
         quality="standard",
         n=1
     )
