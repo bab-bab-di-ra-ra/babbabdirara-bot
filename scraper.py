@@ -60,7 +60,7 @@ def generate_food_image(menu_list):
     image_url = f"https://image.pollinations.ai/prompt/{encoded}?width=800&height=400&nologo=true"
     return image_url
 
-# ── 5. OpenAI 영양 분석 ─────────────────────────────────────
+# ── 5. OpenAI 영양 분석 (영양정보 + 물 섭취량 분리) ─────────
 def analyze_nutrition(menu_list, api_key):
     client = OpenAI(api_key=api_key)
     menu_text = ", ".join(menu_list)
@@ -71,17 +71,33 @@ def analyze_nutrition(menu_list, api_key):
             "role": "user",
             "content": f"""오늘의 점심 식단: {menu_text}
 
-다음 항목을 분석해줘:
-🔥 총 예상 칼로리 (kcal)
-🧂 예상 나트륨 (mg) - 하루 권장량 2000mg 대비 %
-🥩 탄수화물 / 단백질 / 지방 (g)
-💧 권장 물 섭취량: 반드시 "💧 권장 물 섭취량: XL" 형식으로 수치를 강조해서 쓰고, 이유 한 줄 추가
-💡 오늘의 건강 한마디
+반드시 아래 형식 그대로만 써줘. 절대 내용 추가하거나 반복하지 마:
+🔥 총 예상 칼로리: XXXkcal
+🧂 예상 나트륨: XXXmg (하루 권장량의 XX%)
+🥩 탄수화물 XXg / 단백질 XXg / 지방 XXg
+💡 건강 한마디: (한 줄)
+💧 WATER:XX.XL
 
-5줄 이내로 간결하게."""
+마지막 줄은 반드시 💧 WATER:숫자L 형식으로만 써줘. (예: 💧 WATER:2.5L)"""
         }]
     )
-    return response.choices[0].message.content
+
+    raw = response.choices[0].message.content
+
+    # 물 섭취량 분리
+    water_amount = "2.0L"  # 기본값
+    nutrition_lines = []
+    for line in raw.split("\n"):
+        if "WATER:" in line:
+            try:
+                water_amount = line.split("WATER:")[1].strip()
+            except:
+                pass
+        elif line.strip():
+            nutrition_lines.append(line.strip())
+
+    nutrition_text = "\n".join(nutrition_lines)
+    return nutrition_text, water_amount
 
 # ── 6. 오늘의 밥밥디라라 한마디 ────────────────────────────
 def get_bab_comment(menu_list, api_key):
@@ -98,7 +114,7 @@ def get_bab_comment(menu_list, api_key):
     return response.choices[0].message.content
 
 # ── 7. Teams Webhook 전송 ───────────────────────────────────
-def send_to_teams(menu_list, day_text, nutrition_text, image_url, weather_text, bab_comment, webhook_url):
+def send_to_teams(menu_list, day_text, nutrition_text, water_amount, image_url, weather_text, bab_comment, webhook_url):
     today = datetime.now().strftime("%Y년 %m월 %d일")
     menu_text = "\n".join(f"• {m}" for m in menu_list)
 
@@ -120,7 +136,7 @@ def send_to_teams(menu_list, day_text, nutrition_text, image_url, weather_text, 
                     },
                     {
                         "type": "TextBlock",
-                        "text": f"📅 {today} {day_text}",  # 1번: 날짜 이모지 추가
+                        "text": f"📅 {today} {day_text}",
                         "isSubtle": True,
                         "spacing": "None"
                     },
@@ -130,7 +146,6 @@ def send_to_teams(menu_list, day_text, nutrition_text, image_url, weather_text, 
                         "isSubtle": True,
                         "spacing": "None"
                     },
-                    # 2번: 메뉴 중복 멘트 제거 (bab_comment 삭제)
                     {
                         "type": "Image",
                         "url": image_url,
@@ -164,6 +179,30 @@ def send_to_teams(menu_list, day_text, nutrition_text, image_url, weather_text, 
                         "text": nutrition_text,
                         "wrap": True,
                         "spacing": "Medium"
+                    },
+                    # 💧 물 섭취량 강조 박스
+                    {
+                        "type": "Container",
+                        "style": "accent",
+                        "spacing": "Large",
+                        "items": [
+                            {
+                                "type": "TextBlock",
+                                "text": "💧 오늘의 권장 물 섭취량",
+                                "weight": "Bolder",
+                                "size": "Medium",
+                                "horizontalAlignment": "Center"
+                            },
+                            {
+                                "type": "TextBlock",
+                                "text": water_amount,
+                                "weight": "Bolder",
+                                "size": "ExtraLarge",
+                                "color": "Accent",
+                                "horizontalAlignment": "Center",
+                                "spacing": "None"
+                            }
+                        ]
                     }
                 ]
             }
@@ -210,9 +249,9 @@ if __name__ == "__main__":
         print("이미지 생성 중... 🎨")
         image_url = generate_food_image(menu_list)
         print("AI한테 칼로리 물어보는 중...")
-        nutrition_text = analyze_nutrition(menu_list, openai_key)
+        nutrition_text, water_amount = analyze_nutrition(menu_list, openai_key)
         print("오늘의 한마디 생성 중...")
         bab_comment = get_bab_comment(menu_list, openai_key)
         print("밥밥디라라~ 전송 중...")
-        send_to_teams(menu_list, day_text, nutrition_text, image_url, weather_text, bab_comment, webhook_url)
+        send_to_teams(menu_list, day_text, nutrition_text, water_amount, image_url, weather_text, bab_comment, webhook_url)
         print("밥밥디라라!! 완료 🎉")
