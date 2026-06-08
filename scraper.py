@@ -52,7 +52,15 @@ def get_weather():
     except:
         return "🌤️ 날씨 정보를 가져오지 못했어요"
 
-# ── 4. OpenAI 영양 분석 ─────────────────────────────────────
+# ── 4. Pollinations AI로 식단 이미지 생성 (무료, 키 불필요) ─
+def generate_food_image(menu_list):
+    menu_text = ", ".join(menu_list[:4])
+    prompt = f"Korean school lunch tray with {menu_text}, bright colorful illustration style, appetizing food"
+    encoded = requests.utils.quote(prompt)
+    image_url = f"https://image.pollinations.ai/prompt/{encoded}?width=800&height=400&nologo=true"
+    return image_url
+
+# ── 5. OpenAI 영양 분석 ─────────────────────────────────────
 def analyze_nutrition(menu_list, api_key):
     client = OpenAI(api_key=api_key)
     menu_text = ", ".join(menu_list)
@@ -75,7 +83,7 @@ def analyze_nutrition(menu_list, api_key):
     )
     return response.choices[0].message.content
 
-# ── 5. 오늘의 밥밥디라라 한마디 ────────────────────────────
+# ── 6. 오늘의 밥밥디라라 한마디 ────────────────────────────
 def get_bab_comment(menu_list, api_key):
     client = OpenAI(api_key=api_key)
     menu_text = ", ".join(menu_list)
@@ -89,8 +97,8 @@ def get_bab_comment(menu_list, api_key):
     )
     return response.choices[0].message.content
 
-# ── 6. Teams Webhook 전송 ───────────────────────────────────
-def send_to_teams(menu_list, day_text, nutrition_text, weather_text, bab_comment, webhook_url):
+# ── 7. Teams Webhook 전송 ───────────────────────────────────
+def send_to_teams(menu_list, day_text, nutrition_text, image_url, weather_text, bab_comment, webhook_url):
     today = datetime.now().strftime("%Y년 %m월 %d일")
     menu_text = "\n".join(f"• {m}" for m in menu_list)
 
@@ -128,6 +136,12 @@ def send_to_teams(menu_list, day_text, nutrition_text, weather_text, bab_comment
                         "wrap": True,
                         "spacing": "Medium",
                         "isSubtle": True
+                    },
+                    {
+                        "type": "Image",
+                        "url": image_url,
+                        "size": "Stretch",
+                        "spacing": "Medium"
                     },
                     {
                         "type": "TextBlock",
@@ -199,10 +213,12 @@ if __name__ == "__main__":
         print(f"오늘 밥 찾았다!! {menu_list}")
         print("날씨 확인 중...")
         weather_text = get_weather()
+        print("이미지 생성 중... 🎨")
+        image_url = generate_food_image(menu_list)
         print("AI한테 칼로리 물어보는 중...")
         nutrition_text = analyze_nutrition(menu_list, openai_key)
         print("오늘의 한마디 생성 중...")
         bab_comment = get_bab_comment(menu_list, openai_key)
         print("밥밥디라라~ 전송 중...")
-        send_to_teams(menu_list, day_text, nutrition_text, weather_text, bab_comment, webhook_url)
+        send_to_teams(menu_list, day_text, nutrition_text, image_url, weather_text, bab_comment, webhook_url)
         print("밥밥디라라!! 완료 🎉")
