@@ -52,7 +52,7 @@ def get_weather():
     except:
         return "🌤️ 날씨 정보를 가져오지 못했어요"
 
-# ── 4. Pollinations AI로 식단 이미지 생성 (무료, 키 불필요) ─
+# ── 4. Pollinations AI로 식단 이미지 생성 ───────────────────
 def generate_food_image(menu_list):
     menu_text = ", ".join(menu_list[:4])
     prompt = f"Korean school lunch tray with {menu_text}, bright colorful illustration style, appetizing food"
@@ -75,7 +75,7 @@ def analyze_nutrition(menu_list, api_key):
 🔥 총 예상 칼로리 (kcal)
 🧂 예상 나트륨 (mg) - 하루 권장량 2000mg 대비 %
 🥩 탄수화물 / 단백질 / 지방 (g)
-💧 권장 물 섭취량: 몇 L인지 수치를 앞에 크게 쓰고, 이유를 한 줄로 (예: 2.0L - 나트륨이 높아 수분 보충 필요)
+💧 권장 물 섭취량: 반드시 "💧 권장 물 섭취량: XL" 형식으로 수치를 강조해서 쓰고, 이유 한 줄 추가
 💡 오늘의 건강 한마디
 
 5줄 이내로 간결하게."""
@@ -120,7 +120,7 @@ def send_to_teams(menu_list, day_text, nutrition_text, image_url, weather_text, 
                     },
                     {
                         "type": "TextBlock",
-                        "text": f"{today} {day_text}",
+                        "text": f"📅 {today} {day_text}",  # 1번: 날짜 이모지 추가
                         "isSubtle": True,
                         "spacing": "None"
                     },
@@ -130,13 +130,7 @@ def send_to_teams(menu_list, day_text, nutrition_text, image_url, weather_text, 
                         "isSubtle": True,
                         "spacing": "None"
                     },
-                    {
-                        "type": "TextBlock",
-                        "text": f"💬 {bab_comment}",
-                        "wrap": True,
-                        "spacing": "Medium",
-                        "isSubtle": True
-                    },
+                    # 2번: 메뉴 중복 멘트 제거 (bab_comment 삭제)
                     {
                         "type": "Image",
                         "url": image_url,
