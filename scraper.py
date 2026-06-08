@@ -199,5 +199,5 @@ if __name__ == "__main__":
         print("오늘의 한마디 생성 중...")
         bab_comment = get_bab_comment(menu_list, openai_key)
         print("밥밥디라라~ 전송 중...")
-        send_to_teams(menu_list, day_text, nutrition_text, image_url, weather_text, bab_comment, webhook_url)
+        send_to_teams(menu_list, day_text, nutrition_text, weather_text, bab_comment, webhook_url)
         print("밥밥디라라!! 완료 🎉")
