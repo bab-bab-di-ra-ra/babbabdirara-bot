@@ -43,7 +43,7 @@ if __name__ == "__main__":
         print("날씨 확인 중...")
         weather_text = get_weather()
         print("이미지 생성 중... 🎨")
-        image_url = generate_food_image(menu_list)
+        image_url = generate_food_image(menu_list, openai_key)
         print("AI한테 칼로리 물어보는 중...")
         nutrition_text, water_amount = analyze_nutrition(menu_list, openai_key)
         print("오늘의 한마디 생성 중...")
