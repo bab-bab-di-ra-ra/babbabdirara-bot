@@ -38,6 +38,14 @@ def send_to_teams(menu_list, day_text, nutrition_text, water_amount, image_url, 
     today = datetime.now().strftime("%Y년 %m월 %d일")
     menu_text = "\n".join(f"{get_menu_emoji(m)} {m}" for m in menu_list)
 
+    # 이미지 생성에 성공했을 때만 Image 블록을 넣는다 (없으면 깨진 아이콘 대신 생략)
+    image_block = [{
+        "type": "Image",
+        "url": image_url,
+        "size": "Stretch",
+        "spacing": "Medium"
+    }] if image_url else []
+
     payload = {
         "type": "message",
         "attachments": [{
@@ -66,12 +74,7 @@ def send_to_teams(menu_list, day_text, nutrition_text, water_amount, image_url, 
                         "isSubtle": True,
                         "spacing": "None"
                     },
-                    {
-                        "type": "Image",
-                        "url": image_url,
-                        "size": "Stretch",
-                        "spacing": "Medium"
-                    },
+                    *image_block,
                     {
                         "type": "TextBlock",
                         "text": f"🧚 {bab_comment}",

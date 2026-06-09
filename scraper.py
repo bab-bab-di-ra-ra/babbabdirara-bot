@@ -1,3 +1,4 @@
+import os
 import requests
 import sys
 from datetime import datetime
@@ -12,6 +13,7 @@ from services.teams_service import send_to_teams
 if __name__ == "__main__":
     webhook_url = sys.argv[1]
     openai_key  = sys.argv[2]
+    imgbb_key   = sys.argv[3] if len(sys.argv) > 3 else os.environ.get("IMGBB_KEY", "")
 
     print("밥 어딨어? 찾는 중...")
     menu_list, day_text = scrape_menu()
@@ -43,7 +45,7 @@ if __name__ == "__main__":
         print("날씨 확인 중...")
         weather_text = get_weather()
         print("이미지 생성 중... 🎨")
-        image_url = generate_food_image(menu_list, openai_key)
+        image_url = generate_food_image(menu_list, openai_key, imgbb_key)
         print("AI한테 칼로리 물어보는 중...")
         nutrition_text, water_amount = analyze_nutrition(menu_list, openai_key)
         print("오늘의 한마디 생성 중...")

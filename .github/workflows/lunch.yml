@@ -26,4 +26,5 @@ jobs:
         run: |
           python scraper.py \
             "${{ secrets.TEAMS_WEBHOOK }}" \
-            "${{ secrets.OPENAI_API_KEY }}"
+            "${{ secrets.OPENAI_API_KEY }}" \
+            "${{ secrets.IMGBB_KEY }}"
