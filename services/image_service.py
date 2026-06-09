@@ -29,16 +29,22 @@ Realistic food photography, top-down view, warm lighting,
 traditional Korean stainless steel divided tray,
 each dish looks freshly cooked, ultra detailed, photorealistic,
 plain white background, no clutter, no people.
+
+IMPORTANT: Do NOT include any text, letters, words, captions, labels, numbers,
+or writing anywhere in the image. The image must contain zero text.
 """
 
-# ── imgbb 업로드 (base64 → 정적 URL) ───────────────────────
-def upload_to_imgbb(b64, imgbb_key):
-    """base64 이미지를 imgbb에 올리고 정적 이미지 URL을 반환한다. 실패 시 None."""
+# ── imgbb 업로드 (base64 또는 이미지 URL → 정적 URL) ───────
+def upload_to_imgbb(image_data, imgbb_key):
+    """base64 또는 이미지 URL을 imgbb에 올리고 정적 이미지 URL을 반환한다. 실패 시 None.
+
+    imgbb의 image 필드는 base64뿐 아니라 이미지 URL도 받아 알아서 다시 호스팅한다.
+    """
     try:
         res = requests.post(
             "https://api.imgbb.com/1/upload",
             params={"key": imgbb_key},
-            data={"image": b64},
+            data={"image": image_data},
             timeout=60,
         )
         res.raise_for_status()
@@ -49,14 +55,12 @@ def upload_to_imgbb(b64, imgbb_key):
         print(f"imgbb 업로드 실패(이미지 없이 진행): {e}")
         return None
 
-# ── DALL·E 3로 식단 이미지 생성 후 imgbb 호스팅 ────────────
+# ── gpt-image-1로 식단 이미지 생성 후 imgbb 호스팅 ─────────
 def generate_food_image(menu_list, openai_key, imgbb_key):
     """식단 이미지를 생성해 imgbb에 올린 뒤 정적 URL을 반환한다.
 
     base64를 카드에 직접 박으면 Teams 카드 크기 한도(약 28KB)를 넘겨 메시지가
-    조용히 사라지므로, 외부 호스트(imgbb)에 올린 '완성된 정적 URL'만 카드에 넣는다.
-    DALL·E 3 자체도 URL을 주지만 그 URL은 약 1~2시간 뒤 만료되므로, 영구 보관되는
-    imgbb URL을 쓴다. (DALL·E 3는 조직 verified 없이도 호출돼 403 위험이 없다.)
+    조용히 사라지므로, gpt-image-1이 돌려준 base64를 imgbb에 올려 정적 URL만 카드에 넣는다.
 
     이미지 생성/업로드가 실패하면 None을 반환해 카드에서 이미지 블록을 생략한다.
     """
@@ -68,20 +72,18 @@ def generate_food_image(menu_list, openai_key, imgbb_key):
     client = OpenAI(api_key=openai_key)
 
     try:
-        response = client.images.generate(
-            model="dall-e-3",
+        result = client.images.generate(
+            model="gpt-image-1",
             prompt=prompt.strip(),
-            size="1024x1024",
-            quality="standard",
-            response_format="b64_json",   # URL 대신 base64로 받아 imgbb에 올림
-            n=1,
+            size="1536x1024",        # 가로형 식판
+            quality="low",           # 비용/생성속도 절약
         )
         print("이미지 생성 성공! 🎨")
     except Exception as e:
         print(f"이미지 생성 실패(이미지 없이 진행): {e}")
         return None
 
-    b64 = response.data[0].b64_json
+    b64 = result.data[0].b64_json
     if not b64:
         print("이미지 생성 결과가 비어 있음(이미지 없이 진행)")
         return None
