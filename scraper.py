@@ -1,7 +1,9 @@
 import os
 import requests
 import sys
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+
+KST = timezone(timedelta(hours=9))
 
 from services.menu_service import scrape_menu
 from services.weather_service import get_weather
@@ -19,7 +21,7 @@ if __name__ == "__main__":
     menu_list, day_text = scrape_menu()
 
     if not menu_list:
-        today = datetime.now().strftime("%Y년 %m월 %d일")
+        today = datetime.now(KST).strftime("%Y년 %m월 %d일")
         payload = {
             "type": "message",
             "attachments": [{

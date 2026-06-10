@@ -1,5 +1,7 @@
 import requests
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+
+KST = timezone(timedelta(hours=9))
 
 # ── 메뉴별 이모지 매핑 ─────────────────────────────────────
 def get_menu_emoji(menu_name):
@@ -35,7 +37,7 @@ def get_menu_emoji(menu_name):
 
 # ── Teams Webhook 전송 ───────────────────────────────────
 def send_to_teams(menu_list, day_text, nutrition_text, water_amount, image_url, weather_text, bab_comment, webhook_url):
-    today = datetime.now().strftime("%Y년 %m월 %d일")
+    today = datetime.now(KST).strftime("%Y년 %m월 %d일")
     menu_text = "\n".join(f"{get_menu_emoji(m)} {m}" for m in menu_list)
 
     # 이미지 생성에 성공했을 때만 Image 블록을 넣는다 (없으면 깨진 아이콘 대신 생략)

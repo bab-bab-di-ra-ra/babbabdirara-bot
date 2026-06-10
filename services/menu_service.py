@@ -2,7 +2,9 @@ import time
 
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+
+KST = timezone(timedelta(hours=9))
 
 # ── 학식 페이지 요청 (재시도 포함) ─────────────────────────
 def _fetch_menu_html():
@@ -40,7 +42,7 @@ def scrape_menu():
         return None, None
 
     rows = table.find_all("tr")
-    today_weekday = datetime.now().weekday()
+    today_weekday = datetime.now(KST).weekday()
     weekday_names = ["월요일", "화요일", "수요일", "목요일", "금요일"]
 
     for row in rows:
