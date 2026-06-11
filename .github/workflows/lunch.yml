@@ -1,10 +1,10 @@
 name: 밥밥디라라
 
 on:
-  schedule:
-    # 평일 오전 8시 29분
-    - cron: '29 23 * * 0-4'
-  workflow_dispatch: # 수동 테스트 버튼
+  # 정시성 보장을 위해 GitHub schedule 대신 외부 스케줄러(cron-job.org)가
+  # 평일 08:29 KST에 workflow_dispatch API를 호출해 실행한다.
+  # (schedule 이벤트는 GitHub 큐 지연으로 수십 분~수 시간 밀릴 수 있음)
+  workflow_dispatch: # 외부 트리거 & 수동 테스트 버튼
 
 jobs:
   lunch-bot:
