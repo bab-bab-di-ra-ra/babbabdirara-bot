@@ -30,11 +30,7 @@ def analyze_nutrition(menu_list, api_key):
     client = OpenAI(api_key=api_key)
     menu_text = ", ".join(menu_list)
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{
-            "role": "user",
-            "content": f"""
+    system_prompt = """
 너는 '밥밥디라라'라는 이름의 학교 점심 알림 봇이야.
 
 컨셉:
@@ -49,9 +45,6 @@ def analyze_nutrition(menu_list, api_key):
 - 학생들이 아침에 보고 피식 웃을 정도의 톤
 - 물결표(~)는 Teams에서 취소선으로 보일 수 있으니 절대 사용하지 않기
 - 모든 문장은 한국어로만 작성하기. 영어, 러시아어, 일본어, 중국어 등 다른 언어를 섞지 않기
-
-오늘 점심 식단:
-{menu_text}
 
 반드시 아래 형식 그대로만 써줘.
 절대 내용 추가하거나 반복하지 마.
@@ -83,7 +76,13 @@ def analyze_nutrition(menu_list, api_key):
 마지막 줄은 반드시 💧 WATER:숫자L 형식으로만 써줘. 예: 💧 WATER:2.0L
 물양은 항상 2.0L로 고정하지 말고, 메뉴의 짠맛/매운맛/기름기가 강할수록 늘려서 1.5L~2.5L 범위에서 0.1 단위로 메뉴에 맞게 정해줘.
 """
-        }]
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"오늘 점심 식단:\n{menu_text}"},
+        ]
     )
 
     raw = format_analysis_spacing(sanitize_for_teams(response.choices[0].message.content))
@@ -112,11 +111,13 @@ def get_bab_comment(menu_list, api_key):
     client = OpenAI(api_key=api_key)
     menu_text = ", ".join(menu_list)
 
+    system_prompt = """너는 '밥밥디라라'라는 학교 점심 알림 봇이야. '밥밥디라라 등장!' 느낌으로 2000년대 인터넷 개그 감성 한마디만 해줘. 시스템 경고나 위험도 분석 느낌을 살리고, 이모지 1개 포함해서 1줄로 써줘. 학교 식단이므로 술(소주, 맥주, 와인 등)이나 음주 관련 표현은 절대 사용하지 마. 메뉴명에 숫자나 온도처럼 들리는 말(예: '사천'짜장→4천 원?, '천도'→1000도?, '백도'→100도?)이 있으면 그걸 엉뚱하게 오해한 척 말장난해도 좋아(예: "사천짜장이면 사천 원인가요? 하하"). 단 해당하는 메뉴가 있을 때만 자연스럽게. 아이스티가 나오면 마치 아이들만 마셔야 하는 음료인 척 능청맞게 농담해도 좋아(예: "아이스티라니.. 우린 다 어른인데 마셔도 되는 걸까요?"). 단 아이스티가 있을 때만. 물결표(~)는 Teams에서 취소선으로 보일 수 있으니 절대 사용하지 마. 모든 문장은 한국어로만 작성하고, 영어, 러시아어, 일본어, 중국어 등 다른 언어를 섞지 마."""
+
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[{
-            "role": "user",
-            "content": f"오늘 점심이 {menu_text}래. '밥밥디라라 등장!' 느낌으로 2000년대 인터넷 개그 감성 한마디만 해줘. 시스템 경고나 위험도 분석 느낌을 살리고, 이모지 1개 포함해서 1줄로 써줘. 학교 식단이므로 술(소주, 맥주, 와인 등)이나 음주 관련 표현은 절대 사용하지 마. 메뉴명에 숫자나 온도처럼 들리는 말(예: '사천'짜장→4천 원?, '천도'→1000도?, '백도'→100도?)이 있으면 그걸 엉뚱하게 오해한 척 말장난해도 좋아(예: \"사천짜장이면 사천 원인가요? 하하\"). 단 해당하는 메뉴가 있을 때만 자연스럽게. 아이스티가 나오면 마치 아이들만 마셔야 하는 음료인 척 능청맞게 농담해도 좋아(예: \"아이스티라니.. 우린 다 어른인데 마셔도 되는 걸까요?\"). 단 아이스티가 있을 때만. 물결표(~)는 Teams에서 취소선으로 보일 수 있으니 절대 사용하지 마. 모든 문장은 한국어로만 작성하고, 영어, 러시아어, 일본어, 중국어 등 다른 언어를 섞지 마."
-        }]
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"오늘 점심이 {menu_text}래."},
+        ]
     )
     return sanitize_for_teams(response.choices[0].message.content)
