@@ -142,6 +142,11 @@ def send_to_teams(menu_list, day_text, nutrition_text, water_amount, image_url, 
                         "type": "Action.OpenUrl",
                         "title": "🍱 식단 페이지 보러가기",
                         "url": "https://www.kopo.ac.kr/gm/content.do?menu=12623"
+                    },
+                    {
+                        "type": "Action.OpenUrl",
+                        "title": "🎵 밥밥디라라 노래 듣기",
+                        "url": "https://www.youtube.com/watch?v=XLfCED9MIGc&list=RDXLfCED9MIGc&start_radio=1"
                     }
                 ]
             }
