@@ -23,6 +23,10 @@ jobs:
         run: pip install requests beautifulsoup4 openai
 
       - name: 밥밥디라라 실행 🍱
+        env:
+          # 방학 기간엔 저장소 Variables에 VACATION_MODE=on 을 추가하면
+          # 학식이 없을 때 취준 동기부여 미션 카드를 보낸다. 개강하면 값을 지우거나 off.
+          VACATION_MODE: ${{ vars.VACATION_MODE }}
         run: |
           python scraper.py \
             "${{ secrets.TEAMS_WEBHOOK }}" \

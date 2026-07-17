@@ -161,3 +161,75 @@ def send_to_teams(menu_list, day_text, nutrition_text, water_amount, image_url, 
     print(f"전송 결과: {res.status_code}")
     if res.status_code >= 400:
         print(f"거부 사유: {res.text}")
+
+# ── 방학 미션 카드 전송 (학식이 없을 때) ───────────────────
+def send_vacation_mission(mission_text, webhook_url):
+    today = datetime.now(KST).strftime("%Y년 %m월 %d일")
+
+    payload = {
+        "type": "message",
+        "attachments": [{
+            "contentType": "application/vnd.microsoft.card.adaptive",
+            "content": {
+                "type": "AdaptiveCard",
+                "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                "version": "1.4",
+                "body": [
+                    {
+                        "type": "TextBlock",
+                        "size": "ExtraLarge",
+                        "weight": "Bolder",
+                        "text": "🎉 방학을 축하합니다!",
+                        "color": "Accent"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": f"📅 {today} · 학식은 없지만 우리의 취업은 계속된다",
+                        "isSubtle": True,
+                        "spacing": "None"
+                    },
+                    {
+                        "type": "Container",
+                        "style": "accent",
+                        "spacing": "Large",
+                        "items": [
+                            {
+                                "type": "TextBlock",
+                                "text": "🎯 오늘의 방학 미션",
+                                "weight": "Bolder",
+                                "size": "Medium",
+                                "horizontalAlignment": "Center"
+                            },
+                            {
+                                "type": "TextBlock",
+                                "text": mission_text,
+                                "wrap": True,
+                                "spacing": "Small",
+                                "horizontalAlignment": "Center"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "우리는 폴리텍, 취업으로 모인 사이! 오늘도 한 걸음 💪",
+                        "wrap": True,
+                        "spacing": "Medium",
+                        "isSubtle": True,
+                        "horizontalAlignment": "Center"
+                    }
+                ],
+                "actions": [
+                    {
+                        "type": "Action.OpenUrl",
+                        "title": "🎵 데분과 1집 발매 - 넥서스를 향한 길",
+                        "url": "https://www.youtube.com/watch?v=IOP3KsOK72M"
+                    }
+                ]
+            }
+        }]
+    }
+
+    res = requests.post(webhook_url, json=payload)
+    print(f"방학 미션 전송 결과: {res.status_code}")
+    if res.status_code >= 400:
+        print(f"거부 사유: {res.text}")

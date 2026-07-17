@@ -8,8 +8,8 @@ KST = timezone(timedelta(hours=9))
 from services.menu_service import scrape_menu
 from services.weather_service import get_weather
 from services.image_service import generate_food_image
-from services.ai_service import analyze_nutrition, get_bab_comment
-from services.teams_service import send_to_teams
+from services.ai_service import analyze_nutrition, get_bab_comment, get_vacation_mission
+from services.teams_service import send_to_teams, send_vacation_mission
 
 # ── 실행 ────────────────────────────────────────────────────
 if __name__ == "__main__":
@@ -20,7 +20,16 @@ if __name__ == "__main__":
     print("밥 어딨어? 찾는 중...")
     menu_list, day_text = scrape_menu()
 
-    if not menu_list:
+    # 방학 모드: 학식이 없는 방학 기간에는 매일 취준 동기부여 미션을 보낸다.
+    # GitHub 저장소 변수 VACATION_MODE=on 으로 켜고, 개강하면 꺼서 원래 폴백으로 복귀.
+    vacation_mode = os.environ.get("VACATION_MODE", "").strip().lower() in ("on", "true", "1", "yes")
+
+    if not menu_list and vacation_mode:
+        print("방학 모드! 오늘의 미션 생성 중... 🎯")
+        mission_text = get_vacation_mission(openai_key)
+        send_vacation_mission(mission_text, webhook_url)
+        print("오늘의 방학 미션 전송 완료 🎉")
+    elif not menu_list:
         today = datetime.now(KST).strftime("%Y년 %m월 %d일")
         payload = {
             "type": "message",

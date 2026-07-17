@@ -1,4 +1,7 @@
+from datetime import datetime, timezone, timedelta, date
 from openai import OpenAI
+
+KST = timezone(timedelta(hours=9))
 
 # ── Teams 마크다운 깨짐 방지 ────────────────────────────────
 def sanitize_for_teams(text):
@@ -118,6 +121,68 @@ def get_bab_comment(menu_list, api_key):
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"오늘 점심이 {menu_text}래."},
+        ]
+    )
+    return sanitize_for_teams(response.choices[0].message.content)
+
+# ── 방학 미션 주제 (취준 중심 + 리프레시 살짝) ──────────────
+# 폴리텍 취업 목적 모임이라 지원/자격증/코테/포트폴리오/이력서/면접이 메인,
+# 번아웃 방지를 위해 운동·휴식 주제를 사이사이 섞는다.
+VACATION_MISSIONS = [
+    "관심 있는 회사 채용 공고를 하나 찾아 지원서 넣어보기",
+    "오늘은 자격증데이! 개념 한 챕터 공부하기",
+    "인프라(리눅스, AWS, 네트워크 등) 개념 정리하기",
+    "코딩테스트 문제 한 문제 풀어보기",
+    "깃허브/포트폴리오 프로젝트 하나 README 정리하기",
+    "이력서·자기소개서 문장 한 줄 다듬기",
+    "면접 예상 질문 하나 골라 답변 소리 내어 연습하기",
+    "새로운 기술이나 개념 하나를 30분 동안 공부하기",
+    "가볍게 산책하거나 운동하면서 머리 식히기",  # 리프레시
+    "지원하고 싶은 회사·직무를 3곳 리서치해서 정리하기",
+    "지난 프로젝트를 회고하며 배운 점 한 가지 메모하기",
+    "채용 사이트나 링크드인 둘러보며 시장 감 익히기",
+    "오늘은 푹 쉬면서 좋아하는 걸로 에너지 충전하기",  # 리프레시
+]
+
+# 평일 순차 회전의 기준점: 이 월요일을 인덱스 0(지원서)으로 맞추고,
+# 이후 평일마다 한 칸씩(주말은 세지 않고 건너뜀) 순서대로 굴린다.
+VACATION_ANCHOR = date(2026, 7, 20)  # 월요일
+VACATION_ANCHOR_INDEX = 0
+
+# ── 기준일로부터 평일(월~금) 경과 수 (주말은 세지 않음) ────
+def _weekdays_since_anchor(today):
+    diff = today.toordinal() - VACATION_ANCHOR.toordinal()
+    full_weeks, rem = divmod(diff, 7)  # rem: 0~6 (음수 diff에도 0~6 유지)
+    return full_weeks * 5 + min(rem, 5)  # 토(5)/일(6)은 같은 칸으로 접음(평일만 실행되므로 무해)
+
+# ── 오늘의 방학 미션 (학식이 없을 때) ─────────────────────
+def get_vacation_mission(api_key):
+    now = datetime.now(KST)
+    # 평일마다 한 칸씩 순차 진행. 07/20(월)=0번(지원서)부터 시작해 하나도 건너뛰지 않고 순환
+    idx = (VACATION_ANCHOR_INDEX + _weekdays_since_anchor(now.date())) % len(VACATION_MISSIONS)
+    theme = VACATION_MISSIONS[idx]
+
+    client = OpenAI(api_key=api_key)
+    system_prompt = """너는 '밥밥디라라'라는 학교 알림 봇이야. 지금은 방학이라 학식이 없어.
+우리는 폴리텍대학교 학생들이고 취업을 위해 모인 사이라, 방학 동안 서로 동기부여를 해주려고 해.
+2000년대 인터넷 개그 감성으로, '방학 미션 등장!' 느낌의 밝고 응원하는 톤으로 써줘.
+
+반드시 아래 형식 그대로, 딱 두 줄만 써줘. 다른 말은 절대 추가하지 마.
+미션: (주어진 오늘의 미션을 밥밥디라라 말투로 한 문장으로. 이모지 1개 포함)
+한마디: (짧고 힘나는 응원 한마디. 이모지 1개 포함)
+
+규칙:
+- 비속어, 공격적인 표현 금지
+- 술이나 음주 관련 표현 절대 금지
+- 물결표(~)는 Teams에서 취소선으로 보이니 절대 사용 금지
+- 모든 문장은 한국어로만. 다른 언어를 섞지 않기
+- 부담 주지 말고 가볍고 응원하는 느낌으로"""
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"오늘의 미션: {theme}"},
         ]
     )
     return sanitize_for_teams(response.choices[0].message.content)
