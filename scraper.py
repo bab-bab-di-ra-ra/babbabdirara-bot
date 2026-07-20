@@ -17,19 +17,22 @@ if __name__ == "__main__":
     openai_key  = sys.argv[2]
     imgbb_key   = sys.argv[3] if len(sys.argv) > 3 else os.environ.get("IMGBB_KEY", "")
 
-    print("밥 어딨어? 찾는 중...")
-    menu_list, day_text = scrape_menu()
-
-    # 방학 모드: 학식이 없는 방학 기간에는 매일 취준 동기부여 미션을 보낸다.
+    # 방학 모드: 방학 기간에는 매일 취준 동기부여 미션을 보낸다.
     # GitHub 저장소 변수 VACATION_MODE=on 으로 켜고, 개강하면 꺼서 원래 폴백으로 복귀.
+    # 학식 페이지에 지난 학기 표가 남아 있어도 미션이 나가도록 스크래핑보다 먼저 판단한다.
     vacation_mode = os.environ.get("VACATION_MODE", "").strip().lower() in ("on", "true", "1", "yes")
 
-    if not menu_list and vacation_mode:
+    if vacation_mode:
         print("방학 모드! 오늘의 미션 생성 중... 🎯")
         mission_text = get_vacation_mission(openai_key)
         send_vacation_mission(mission_text, webhook_url)
         print("오늘의 방학 미션 전송 완료 🎉")
-    elif not menu_list:
+        sys.exit(0)
+
+    print("밥 어딨어? 찾는 중...")
+    menu_list, day_text = scrape_menu()
+
+    if not menu_list:
         today = datetime.now(KST).strftime("%Y년 %m월 %d일")
         payload = {
             "type": "message",
