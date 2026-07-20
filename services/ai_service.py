@@ -144,21 +144,27 @@ VACATION_MISSIONS = [
     "오늘은 푹 쉬면서 좋아하는 걸로 에너지 충전하기",  # 리프레시
 ]
 
-# 평일 순차 회전의 기준점: 이 월요일을 인덱스 0(지원서)으로 맞추고,
+# 평일 순차 회전의 기준점: 이 날을 인덱스 0(지원서)으로 맞추고,
 # 이후 평일마다 한 칸씩(주말은 세지 않고 건너뜀) 순서대로 굴린다.
-VACATION_ANCHOR = date(2026, 7, 20)  # 월요일
+# 방학 모드 첫 정상 실행일을 0번으로 잡았다.
+VACATION_ANCHOR = date(2026, 7, 22)  # 수요일
 VACATION_ANCHOR_INDEX = 0
+
+# ── 날짜를 '평일 일련번호'로 변환 (주말은 다음 월요일과 같은 칸) ────
+def _weekday_ordinal(d):
+    # toordinal() 1 = 0001-01-01 = 월요일이므로 -1 하면 rem 0=월 … 6=일
+    full_weeks, rem = divmod(d.toordinal() - 1, 7)
+    return full_weeks * 5 + min(rem, 5)  # 토(5)/일(6)은 다음 월요일과 같은 칸(평일만 실행되므로 무해)
 
 # ── 기준일로부터 평일(월~금) 경과 수 (주말은 세지 않음) ────
 def _weekdays_since_anchor(today):
-    diff = today.toordinal() - VACATION_ANCHOR.toordinal()
-    full_weeks, rem = divmod(diff, 7)  # rem: 0~6 (음수 diff에도 0~6 유지)
-    return full_weeks * 5 + min(rem, 5)  # 토(5)/일(6)은 같은 칸으로 접음(평일만 실행되므로 무해)
+    # 두 날짜의 평일 일련번호 차이라서 앵커가 무슨 요일이든 정확하다
+    return _weekday_ordinal(today) - _weekday_ordinal(VACATION_ANCHOR)
 
 # ── 오늘의 방학 미션 (학식이 없을 때) ─────────────────────
 def get_vacation_mission(api_key):
     now = datetime.now(KST)
-    # 평일마다 한 칸씩 순차 진행. 07/20(월)=0번(지원서)부터 시작해 하나도 건너뛰지 않고 순환
+    # 평일마다 한 칸씩 순차 진행. 07/22(수)=0번(지원서)부터 시작해 하나도 건너뛰지 않고 순환
     idx = (VACATION_ANCHOR_INDEX + _weekdays_since_anchor(now.date())) % len(VACATION_MISSIONS)
     theme = VACATION_MISSIONS[idx]
 
